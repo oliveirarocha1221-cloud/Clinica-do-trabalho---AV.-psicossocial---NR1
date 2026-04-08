@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cargos da Empresa</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:linear-gradient(135deg,#0c4a6e,#2563eb);min-height:100vh;}
+.header{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:20px 40px;display:flex;align-items:center;color:white;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo img{width:45px;height:45px;border-radius:50%;}
+.container{max-width:1000px;margin:40px auto;background:white;padding:30px;border-radius:16px;box-shadow:0 15px 40px rgba(0,0,0,0.2);}
+.topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+h1{color:#0c4a6e;font-size:22px;}
+.card{background:#f8fafc;padding:20px;margin-top:15px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid #e2e8f0;}
+.nome{font-size:18px;font-weight:600;}
+.qtd{font-size:14px;color:#64748b;}
+button{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;}
+.voltar{text-align:center;margin-top:30px;}
+.footer{text-align:center;color:white;margin-top:20px;font-size:14px;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="logo">
+    <img src="https://cdn-icons-png.flaticon.com/512/2920/2920329.png">
+    <span>Clínica Do Trabalho</span>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="topo">
+  <h1 id="tituloEmpresa"></h1>
+  <button onclick="gerarPDF()">📄 Gerar Relatório</button>
+</div>
+
+<div id="listaCargos"></div>
+
+<div class="voltar">
+  <button onclick="voltar()">⬅ Voltar</button>
+</div>
+
+</div>
+
+<div class="footer">
+© 2026 Clínica Do Trabalho
+</div>
+
+<script>
+
+const URL = "https://script.google.com/macros/s/AKfycbzRXsUd8pDea5c6JO18qxT49Rp2YPr1U4qhKI1QnvN0ODHJHdIyPUQ7uTIGxR78Llk/exec";
+
+// 🔹 PARAMETROS
+let params = new URLSearchParams(window.location.search);
+let cnpj = String(params.get("cnpj") || "").trim();
+let nome = params.get("nome");
+
+let titulo = document.getElementById("tituloEmpresa");
+let lista = document.getElementById("listaCargos");
+
+let cargos = {};
+let respostasEmpresa = [];
+
+// 🔥 NORMALIZAR
+function normalizar(txt){
+  return String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+}
+
+// 🔥 MESMA FUNÇÃO DO PAINEL
+function getPeso(resposta, tipo){
+
+  resposta = normalizar(resposta);
+
+  if(tipo === "positiva"){
+    if(resposta === "sempre") return 0;
+    if(resposta === "frequentemente") return 0.5;
+    if(resposta.includes("vez")) return 1;
+    if(resposta === "raramente") return 1.5;
+    return 2;
+  } else {
+    if(resposta === "sempre") return 2;
+    if(resposta === "frequentemente") return 1.5;
+    if(resposta.includes("vez")) return 1;
+    if(resposta === "raramente") return 0.5;
+    return 0;
+  }
+}
+
+// 🔥 CLASSIFICAÇÃO
+const perguntasTipo = {
+  p1:"positiva", p2:"negativa", p3:"positiva",
+  p4:"positiva", p5:"positiva", p6:"positiva",
+  p7:"positiva", p8:"positiva", p9:"positiva",
+  p10:"positiva", p11:"positiva", p12:"positiva",
+  p13:"positiva", p14:"positiva",
+  p15:"positiva", p16:"negativa", p17:"positiva",
+  p18:"negativa", p19:"negativa", p20:"negativa",
+  p21:"positiva", p22:"positiva", p23:"positiva",
+  p24:"positiva", p25:"positiva", p26:"positiva",
+  p27:"positiva", p28:"negativa", p29:"positiva"
+};
+
+// 🔙 VOLTAR
+window.voltar = function(){
+  window.location.href = "empresas.html?cnpj="
+    + encodeURIComponent(cnpj)
+    + "&nome=" + encodeURIComponent(nome);
+}
+
+// 🔥 BUSCAR
+async function carregar(){
+
+  try {
+
+    lista.innerHTML = "";
+    cargos = {};
+    respostasEmpresa = [];
+
+    const resposta = await fetch(URL + "?cnpj=" + encodeURIComponent(cnpj));
+    const dados = await resposta.json();
+
+    dados.forEach(d => {
+
+      let cnpjLinha = String(d.cnpj || "").trim();
+
+      if(cnpjLinha === cnpj){
+
+        respostasEmpresa.push(d);
+
+        let cargo = normalizar(d.cargo || d.cargos || "não informado");
+
+        if(!cargos[cargo]) cargos[cargo] = [];
+        cargos[cargo].push(d);
+      }
+    });
+
+    if(respostasEmpresa.length === 0){
+      titulo.innerText = "Empresa não encontrada";
+      return;
+    }
+
+    titulo.innerText = `${nome} (CNPJ: ${cnpj})`;
+
+    for(let cargo in cargos){
+
+      let card = document.createElement("div");
+      card.className="card";
+
+      card.innerHTML = `
+        <div>
+          <div class="nome">${cargo}</div>
+          <div class="qtd">${cargos[cargo].length} respostas</div>
+        </div>
+        <button onclick="abrirCargo('${cargo}')">Ver Relatório</button>
+      `;
+
+      lista.appendChild(card);
+    }
+
+  } catch (erro) {
+    console.error(erro);
+    titulo.innerText = "Erro ao carregar dados";
+  }
+}
+
+// 🔗 IR
+window.abrirCargo = function(cargo){
+  window.location.href="painel.html?cnpj="+encodeURIComponent(cnpj)+"&nome="+encodeURIComponent(nome)+"&cargo="+encodeURIComponent(cargo);
+}
+
+// 🔥 PDF CORRIGIDO
+window.gerarPDF = function(){
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  let y = 20;
+  const pageHeight = 280;
+
+  function novaLinha(espaco = 8){
+    y += espaco;
+    if(y > pageHeight){
+      doc.addPage();
+      y = 20;
+    }
+  }
+
+  function titulo(txt){
+    doc.setFontSize(16);
+    doc.setFont(undefined, "bold");
+    doc.text(txt, 20, y);
+    novaLinha(12);
+    doc.setFont(undefined, "normal");
+  }
+
+  function subtitulo(txt){
+    doc.setFontSize(13);
+    doc.setFont(undefined, "bold");
+    doc.text(txt, 20, y);
+    novaLinha(10);
+    doc.setFont(undefined, "normal");
+  }
+
+  function texto(txt){
+    doc.setFontSize(11);
+    const linhas = doc.splitTextToSize(txt, 170);
+    doc.text(linhas, 20, y);
+    novaLinha(linhas.length * 5);
+  }
+
+  function linha(){
+    doc.line(20, y, 190, y);
+    novaLinha(6);
+  }
+
+  titulo("RELATÓRIO PSICOSSOCIAL");
+
+  texto(`Empresa: ${nome}`);
+  texto(`CNPJ: ${cnpj}`);
+  texto(`Total de colaboradores: ${respostasEmpresa.length}`);
+  texto(`Data: ${new Date().toLocaleDateString()}`);
+
+  linha();
+
+  let ranking = [];
+  let pontuacaoEmpresa = 0;
+  let totalPerguntasEmpresa = 0;
+
+  for(let cargo in cargos){
+
+    let respostasCargo = cargos[cargo];
+    let contagem = {};
+
+    respostasCargo.forEach(r => {
+
+      let resp;
+
+      try {
+        resp = JSON.parse(r.respostas || "{}");
+      } catch {
+        resp = {};
+      }
+
+      for(let i=1;i<=29;i++){
+
+        let pergunta = "p"+i;
+        let valor = normalizar(resp[pergunta]);
+
+        if(!valor) continue;
+
+        if(!contagem[pergunta]) contagem[pergunta] = {};
+        if(!contagem[pergunta][valor]) contagem[pergunta][valor] = 0;
+
+        contagem[pergunta][valor]++;
+      }
+    });
+
+    let pontuacao = 0;
+    let totalPerguntas = 0;
+
+    for(let i=1;i<=29;i++){
+
+      let pergunta = "p"+i;
+      let respostasObj = contagem[pergunta];
+
+      if(!respostasObj) continue;
+
+      totalPerguntas++;
+
+      let respostaPrincipal = Object.keys(respostasObj)
+        .reduce((a,b)=> respostasObj[a] > respostasObj[b] ? a : b);
+
+      let tipoPergunta = perguntasTipo[pergunta];
+
+      // 🔥 AGORA USANDO MESMA LÓGICA DO PAINEL
+      let peso = getPeso(respostaPrincipal, tipoPergunta);
+
+      pontuacao += peso;
+      pontuacaoEmpresa += peso;
+      totalPerguntasEmpresa++;
+    }
+
+    let media = pontuacao / totalPerguntas;
+
+    let nivel = "Baixo";
+    if(media >= 1.2) nivel = "Alto";
+    else if(media >= 0.6) nivel = "Médio";
+
+    ranking.push({
+      cargo,
+      nivel,
+      media,
+      total: respostasCargo.length
+    });
+  }
+
+  let mediaEmpresa = pontuacaoEmpresa / totalPerguntasEmpresa;
+
+  let nivelEmpresa = "Baixo";
+  if(mediaEmpresa >= 1.2) nivelEmpresa = "Alto";
+  else if(mediaEmpresa >= 0.6) nivelEmpresa = "Médio";
+
+  subtitulo("Resumo Executivo");
+  texto(`O nível geral de risco psicossocial foi classificado como ${nivelEmpresa}, com índice ${mediaEmpresa.toFixed(2)}.`);
+
+  linha();
+
+  subtitulo("Análise por Cargo");
+
+  ranking.forEach(r => {
+    texto(`Cargo: ${r.cargo}`);
+    texto(`Colaboradores: ${r.total}`);
+    texto(`Risco: ${r.nivel}`);
+    texto(`Índice: ${r.media.toFixed(2)}`);
+    linha();
+  });
+
+  ranking.sort((a,b)=> b.media - a.media);
+
+// 🔥 IDENTIFICAR CARGOS POR NÍVEL
+let cargosAlto = ranking.filter(r => r.nivel === "Alto");
+let cargosMedio = ranking.filter(r => r.nivel === "Médio");
+let cargosBaixo = ranking.filter(r => r.nivel === "Baixo");
+
+subtitulo("Diagnóstico por Cargo");
+
+// 🔴 ALTO RISCO
+if(cargosAlto.length > 0){
+  texto("Cargos com alto risco psicossocial:");
+  cargosAlto.forEach(c => {
+    texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+  });
+  linha();
+}
+
+// 🟡 MÉDIO RISCO
+if(cargosMedio.length > 0){
+  texto("Cargos com risco moderado:");
+  cargosMedio.forEach(c => {
+    texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+  });
+  linha();
+}
+
+// 🟢 BAIXO RISCO
+if(cargosBaixo.length > 0){
+  texto("Cargos com baixo risco:");
+  cargosBaixo.forEach(c => {
+    texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+  });
+  linha();
+}
+
+  subtitulo("Ranking de Risco");
+
+  ranking.forEach((r,i)=>{
+    texto(`${i+1}º - ${r.cargo} (${r.nivel} | ${r.media.toFixed(2)})`);
+  });
+
+  linha();
+
+  subtitulo("Conclusão");
+
+  if(nivelEmpresa === "Baixo"){
+
+  texto("Os resultados indicam um ambiente organizacional saudável, com baixos níveis de risco psicossocial.");
+  texto("Observa-se equilíbrio entre as demandas de trabalho e os recursos disponíveis, além de relações interpessoais positivas e condições adequadas de atuação.");
+  texto("Recomenda-se a manutenção das boas práticas atuais, com ações contínuas de monitoramento, promoção do bem-estar e valorização dos colaboradores.");
+
+}
+
+else if(nivelEmpresa === "Médio"){
+
+  texto("Os resultados evidenciam a presença de fatores de risco psicossocial em nível moderado.");
+  texto("Alguns aspectos do ambiente de trabalho podem estar impactando o bem-estar, a motivação e o desempenho dos colaboradores.");
+  texto("Recomenda-se a implementação de ações preventivas e corretivas, com foco na melhoria das condições organizacionais, comunicação interna e suporte aos colaboradores.");
+
+}
+
+else if(nivelEmpresa === "Alto"){
+
+  texto("Os resultados indicam níveis elevados de risco psicossocial no ambiente organizacional.");
+  texto("Foram identificados fatores críticos que podem comprometer a saúde mental, o engajamento e a produtividade dos colaboradores.");
+  texto("É altamente recomendada a adoção imediata de medidas corretivas, incluindo intervenções organizacionais, revisão das condições de trabalho, fortalecimento da liderança e oferta de suporte psicológico especializado.");
+
+}
+
+  doc.save("relatorio_psicossocial.pdf");
+}
+
+// 🚀 START
+carregar();
+
+</script>

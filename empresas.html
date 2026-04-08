@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empresas</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins', sans-serif;}
+
+body{
+background: linear-gradient(135deg,#0c4a6e,#2563eb);
+min-height:100vh;
+}
+
+#splash{
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background: linear-gradient(135deg,#0c4a6e,#2563eb);
+display:flex;align-items:center;justify-content:center;
+z-index:9999;
+animation: fadeOut 1.5s ease forwards;
+animation-delay: 3s;
+}
+
+.splash-content{text-align:center;color:white;animation: zoomIn 2s ease;}
+.splash-content img{width:140px;margin-bottom:20px;}
+.splash-content h2{font-size:36px;}
+.splash-content p{font-size:18px;opacity:0.85;}
+
+@keyframes zoomIn{
+from{transform:scale(0.7);opacity:0;}
+to{transform:scale(1);opacity:1;}
+}
+
+@keyframes fadeOut{
+to{opacity:0;visibility:hidden;}
+}
+
+.header{
+background: rgba(255,255,255,0.1);
+backdrop-filter: blur(10px);
+padding:20px 40px;
+display:flex;
+justify-content:space-between;
+color:white;
+}
+
+.logo{display:flex;align-items:center;gap:10px;}
+.logo img{width:55px;}
+
+.container{
+max-width:1000px;
+margin:40px auto;
+background:white;
+padding:30px;
+border-radius:16px;
+box-shadow:0 15px 40px rgba(0,0,0,0.2);
+}
+
+h1{text-align:center;margin-bottom:20px;color:#0c4a6e;}
+
+input{
+width:100%;
+padding:14px;
+border-radius:10px;
+border:1px solid #ddd;
+margin-bottom:20px;
+}
+
+.card{
+background:#f8fafc;
+padding:20px;
+margin-top:15px;
+border-radius:12px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.nome{font-size:18px;font-weight:600;}
+.respostas{font-size:14px;color:#64748b;}
+
+button{
+background:#2563eb;
+color:white;
+border:none;
+padding:10px 18px;
+border-radius:8px;
+cursor:pointer;
+}
+
+.vazio{text-align:center;padding:30px;color:#64748b;}
+.footer{text-align:center;color:white;margin-top:20px;}
+</style>
+</head>
+
+<body>
+
+<div id="splash">
+  <div class="splash-content">
+    <img src="Logo assinatura (5).png">
+    <h2>Bem-vindo</h2>
+    <p>Clínica do Trabalho</p>
+  </div>
+</div>
+
+<div class="header">
+  <div class="logo">
+    <img src="Logo assinatura (5).png">
+    <span>Avaliação psicossocial</span>
+  </div>
+</div>
+
+<div class="container">
+<h1>Empresas Participantes</h1>
+<input type="text" id="buscaEmpresa" placeholder="🔍 Pesquisar empresa...">
+<div id="listaEmpresas"></div>
+</div>
+
+<div class="footer">
+© 2026 Clínica Do Trabalho • Sistema de Relatórios
+</div>
+
+<script type="module">
+
+const URL = "https://script.google.com/macros/s/AKfycbzRXsUd8pDea5c6JO18qxT49Rp2YPr1U4qhKI1QnvN0ODHJHdIyPUQ7uTIGxR78Llk/exec";
+
+let lista = document.getElementById("listaEmpresas");
+let todasEmpresas = [];
+
+// SPLASH
+window.addEventListener("load", () => {
+  let jaViu = sessionStorage.getItem("splashExibido");
+
+  if(!jaViu){
+    sessionStorage.setItem("splashExibido", "true");
+    setTimeout(() => {
+      document.getElementById("splash").style.display = "none";
+    }, 4500);
+  } else {
+    document.getElementById("splash").style.display = "none";
+  }
+});
+
+// 🔥 BUSCAR DO GOOGLE SHEETS
+async function carregar(){
+
+  try {
+    const resposta = await fetch(URL);
+    const dados = await resposta.json();
+
+    let agrupado = {};
+
+    dados.forEach(d => {
+
+      // 🔥 NORMALIZAÇÃO (AQUI ESTAVA O PROBLEMA)
+      let cnpj = String(d.cnpj || "").trim();
+      let nome = String(d.empresa || "Empresa sem nome").trim();
+
+      // ❌ ignora se não tiver CNPJ
+      if(!cnpj) return;
+
+      // 🔥 evita duplicação por erro de espaço
+      let chave = cnpj;
+
+      if(!agrupado[chave]){
+        agrupado[chave] = {
+          nome: nome,
+          cnpj: cnpj,
+          total: 0
+        };
+      }
+
+      agrupado[chave].total++;
+    });
+
+    todasEmpresas = Object.values(agrupado);
+
+    renderizar(todasEmpresas);
+
+  } catch (erro) {
+    console.error("Erro ao carregar dados:", erro);
+    lista.innerHTML = "<div class='vazio'>Erro ao carregar dados.</div>";
+  }
+}
+
+// 🔥 RENDERIZAR
+function renderizar(empresas){
+
+  lista.innerHTML = "";
+
+  if(empresas.length === 0){
+    lista.innerHTML = "<div class='vazio'>Nenhuma empresa encontrada.</div>";
+    return;
+  }
+
+  empresas.forEach(empresa => {
+
+    let card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <div>
+        <div class="nome">${empresa.nome}</div>
+        <div class="respostas">${empresa.total} respostas</div>
+      </div>
+
+      <button onclick="abrirEmpresa('${empresa.cnpj}','${empresa.nome}')">
+        Ver Relatório
+      </button>
+    `;
+
+    lista.appendChild(card);
+  });
+}
+
+// 🔍 BUSCA
+document.getElementById("buscaEmpresa").addEventListener("input", function(){
+
+  let termo = this.value.toLowerCase();
+
+  let filtradas = todasEmpresas.filter(emp => 
+    emp.nome.toLowerCase().includes(termo) ||
+    emp.cnpj.toLowerCase().includes(termo)
+  );
+
+  renderizar(filtradas);
+});
+
+// 🔗 REDIRECIONAR
+window.abrirEmpresa = function(cnpj, nome){
+  window.location.href = "cargos.html?cnpj=" 
+  + encodeURIComponent(cnpj) 
+  + "&nome=" + encodeURIComponent(nome);
+}
+
+// 🚀 INICIAR
+carregar();
+
+</script>
+
+</body>
+</html>

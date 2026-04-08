@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avaliação Psicossocial</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:linear-gradient(135deg,#0c4a6e,#2563eb);min-height:100vh;display:flex;justify-content:center;align-items:center;}
+.container{background:white;padding:30px;border-radius:16px;width:95%;max-width:800px;box-shadow:0 15px 40px rgba(0,0,0,0.2);}
+h1{text-align:center;color:#0c4a6e;margin-bottom:15px;}
+h2{color:#1d4ed8;margin-bottom:10px;}
+.pergunta{margin-bottom:15px;}
+.pergunta p{margin-bottom:5px;}
+select,input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #ccc;}
+.botoes{display:flex;justify-content:space-between;margin-top:20px;}
+button{padding:10px 20px;border:none;border-radius:8px;background:#2563eb;color:white;cursor:pointer;}
+.progresso{height:10px;background:#e5e7eb;border-radius:10px;margin-bottom:20px;}
+.barra{height:100%;background:#2563eb;border-radius:10px;width:0%;transition:0.4s;}
+.pagina{display:none;}
+.pagina.ativa{display:block;}
+
+.erro{
+  border:2px solid #dc2626 !important;
+  background:#fee2e2;
+}
+
+.mensagem-erro{
+  color:#dc2626;
+  font-size:13px;
+  margin-top:5px;
+}
+
+.loading{
+  opacity:0.6;
+  pointer-events:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Avaliação Psicossocial</h1>
+
+<div class="progresso"><div class="barra" id="barra"></div></div>
+
+<form onsubmit="return false;">
+
+<div class="pagina ativa">
+<h2>Identificação</h2>
+<input type="text" id="empresa" placeholder="Empresa"><br><br>
+<input type="text" id="cnpj" placeholder="CNPJ"><br><br>
+<input type="text" id="cargo" placeholder="Cargo">
+</div>
+
+<!-- PERGUNTAS (mantidas iguais) -->
+<div class="pagina"><h2>Demanda de Trabalho</h2>
+<div class="pergunta"><p>A quantidade de trabalho que tenho é adequada para o tempo disponível.</p><select id="p1"></select></div>
+<div class="pergunta"><p>Frequentemente, sinto que tenho muito trabalho para fazer.</p><select id="p2"></select></div>
+<div class="pergunta"><p>Tenho prazos razoáveis para cumprir minhas tarefas.</p><select id="p3"></select></div>
+</div>
+
+<div class="pagina"><h2>Controle e Autonomia</h2>
+<div class="pergunta"><p>Tenho liberdade para decidir como realizar minhas tarefas.</p><select id="p4"></select></div>
+<div class="pergunta"><p>Sinto que posso influenciar as decisões que afetam meu trabalho.</p><select id="p5"></select></div>
+<div class="pergunta"><p>Tenho controle sobre minha carga de trabalho.</p><select id="p6"></select></div>
+</div>
+
+<div class="pagina"><h2>Ambiente de Trabalho</h2>
+<div class="pergunta"><p>Sinto que o ambiente físico de trabalho é seguro</p><select id="p7"></select></div>
+<div class="pergunta"><p>A qualidade do ambiente de trabalho contribui para meu bem-estar.</p><select id="p8"></select></div>
+<div class="pergunta"><p>Existem condições adequadas para realizar meu trabalho.</p><select id="p9"></select></div>
+</div>
+
+<div class="pagina"><h2>Relacionamento</h2>
+<div class="pergunta"><p>Tenho um bom relacionamento com meus colegas de trabalho.</p><select id="p10"></select></div>
+<div class="pergunta"><p>Sinto que posso contar com o apoio dos meus colegas</p><select id="p11"></select></div>
+<div class="pergunta"><p>Existe um bom espírito de equipe em meu ambiente de trabalho</p><select id="p12"></select></div>
+</div>
+
+<div class="pagina"><h2>Reconhecimento</h2>
+<div class="pergunta"><p>Meu trabalho é reconhecido por meus superiores?</p><select id="p13"></select></div>
+<div class="pergunta"><p>Recebo feedback positivo sobre meu desempenho.</p><select id="p14"></select></div>
+</div>
+
+<div class="pagina"><h2>Segurança no Emprego</h2>
+<div class="pergunta"><p>Sinto-me seguro(a) em relação à minha posição na empresa.</p><select id="p15"></select></div>
+<div class="pergunta"><p>Tenho preocupações sobre a possibilidade de perder meu emprego.</p><select id="p16"></select></div>
+<div class="pergunta"><p>A empresa proporciona estabilidade no emprego</p><select id="p17"></select></div>
+</div>
+
+<div class="pagina"><h2>Pressão e Exigências</h2>
+<div class="pergunta"><p>Há um controle excessivo sobre o meu processo de trabalho?</p><select id="p18"></select></div>
+<div class="pergunta"><p>Sinto que há pressão psicológica nas atividades que realizo.</p><select id="p19"></select></div>
+<div class="pergunta"><p>O meu trabalho pode ser emocionalmente desgastante</p><select id="p20"></select></div>
+</div>
+
+<div class="pagina"><h2>Valores e Cultura</h2>
+<div class="pergunta"><p>Sinto que os valores da empresa estão alinhados com os meus.</p><select id="p21"></select></div>
+<div class="pergunta"><p>Não tenho conflitos entre as minhas crenças e o que é exigido pela empresa.</p><select id="p22"></select></div>
+<div class="pergunta"><p>A cultura da empresa respeita os meus valores.</p><select id="p23"></select></div>
+</div>
+
+<div class="pagina"><h2>Desenvolvimento</h2>
+<div class="pergunta"><p>A empresa oferece oportunidades de desenvolvimento.</p><select id="p24"></select></div>
+<div class="pergunta"><p>Sinto que posso crescer profissionalmente.</p><select id="p25"></select></div>
+<div class="pergunta"><p>Estou satisfeito(a) com treinamentos.</p><select id="p26"></select></div>
+</div>
+
+<div class="pagina"><h2>Equilíbrio Vida-Trabalho</h2>
+<div class="pergunta"><p>Consigo equilibrar minha vida profissional e pessoal.</p><select id="p27"></select></div>
+<div class="pergunta"><p>Meu trabalho interfere na minha vida familiar.</p><select id="p28"></select></div>
+<div class="pergunta"><p>Sinto que tenho tempo suficiente para atividades pessoais e de lazer.</p><select id="p29"></select></div>
+</div>
+
+<div class="pagina"><h2>Comentários</h2>
+<textarea id="comentarios"></textarea>
+</div>
+
+<div class="botoes">
+<button type="button" onclick="voltar()">Voltar</button>
+<button type="button" onclick="proximo()">Próximo</button>
+</div>
+
+</form>
+</div>
+
+<!-- 🔥 APENAS ESSE SCRIPT -->
+<script type="module">
+
+const URL = "https://script.google.com/macros/s/AKfycbzRXsUd8pDea5c6JO18qxT49Rp2YPr1U4qhKI1QnvN0ODHJHdIyPUQ7uTIGxR78Llk/exec";
+
+const opcoes = `
+<option value="">Selecione</option>
+<option>Nunca</option>
+<option>Raramente</option>
+<option>Às vezes</option>
+<option>Frequentemente</option>
+<option>Sempre</option>
+`;
+
+window.onload = () => {
+  document.querySelectorAll("select").forEach(s => s.innerHTML = opcoes);
+};
+
+let pagina = 0;
+const paginas = document.querySelectorAll(".pagina");
+
+function mostrar(){
+  paginas.forEach(p=>p.classList.remove("ativa"));
+  paginas[pagina].classList.add("ativa");
+  document.getElementById("barra").style.width = ((pagina+1)/paginas.length)*100+"%";
+}
+
+// ✅ VALIDAÇÃO PROFISSIONAL
+function validarPagina(){
+
+  let valido = true;
+  const paginaAtual = paginas[pagina];
+
+  // remove erros antigos
+  paginaAtual.querySelectorAll(".erro").forEach(el => el.classList.remove("erro"));
+
+  // 🔒 valida perguntas
+  const selects = paginaAtual.querySelectorAll("select");
+
+  for(let select of selects){
+    if(!select.value){
+      select.classList.add("erro");
+      select.scrollIntoView({behavior:"smooth", block:"center"});
+      valido = false;
+    }
+  }
+
+  // 🔒 valida primeira página
+  if(pagina === 0){
+
+    const campos = ["empresa","cnpj","cargo"];
+
+    campos.forEach(id=>{
+      const el = document.getElementById(id);
+
+      if(!el.value){
+        el.classList.add("erro");
+        el.scrollIntoView({behavior:"smooth", block:"center"});
+        valido = false;
+      }
+    });
+  }
+
+  return valido;
+}
+
+// 👉 PRÓXIMO
+window.proximo = function(){
+
+  if(!validarPagina()) return;
+
+  if(pagina < paginas.length-1){
+    pagina++;
+    mostrar();
+  } else {
+    enviar();
+  }
+}
+
+// 👉 VOLTAR
+window.voltar = function(){
+  if(pagina > 0){
+    pagina--;
+    mostrar();
+  } else {
+    window.location.href = "funcionario.html";
+  }
+}
+
+// 🔒 CONTROLE DE ENVIO
+let enviando = false;
+
+window.enviar = async function(){
+
+  if(enviando) return;
+  enviando = true;
+
+  const botaoEnviar = document.querySelector(".botoes button:last-child");
+
+  if(botaoEnviar){
+    botaoEnviar.disabled = true;
+    botaoEnviar.innerHTML = "⏳ Enviando...";
+    botaoEnviar.style.opacity = "0.6";
+    botaoEnviar.style.cursor = "not-allowed";
+  }
+
+  const empresaInput = document.getElementById("empresa");
+  const cnpjInput = document.getElementById("cnpj");
+  const cargoInput = document.getElementById("cargo");
+  const comentariosInput = document.getElementById("comentarios");
+
+  let dados = {
+    nome: "Anonimo",
+    empresa: empresaInput.value,
+    cnpj: cnpjInput.value,
+    cargo: cargoInput.value,
+    comentarios: comentariosInput?.value || "",
+    respostas: {}
+  };
+
+  for(let i=1;i<=29;i++){
+    let el = document.getElementById("p"+i);
+    dados.respostas["p"+i] = el ? el.value : "";
+  }
+
+  try{
+    await fetch(URL, {
+      method: "POST",
+      body: JSON.stringify(dados)
+    });
+
+    if(botaoEnviar){
+      botaoEnviar.innerHTML = "✅ Enviado com sucesso!";
+    }
+
+    setTimeout(() => {
+      window.location.href="confirmacao.html";
+    }, 800);
+
+  }catch(e){
+    console.error(e);
+
+    if(botaoEnviar){
+      botaoEnviar.disabled = false;
+      botaoEnviar.innerHTML = "Tentar novamente";
+      botaoEnviar.style.opacity = "1";
+      botaoEnviar.style.cursor = "pointer";
+    }
+
+    enviando = false;
+    alert("Erro ao enviar!");
+  }
+}
+
+</script>

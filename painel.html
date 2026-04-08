@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório</title>
+
+<style>
+body{
+  font-family:'Poppins', sans-serif;
+  background: linear-gradient(135deg,#0c4a6e,#2563eb);
+  padding:20px;
+  color:#0f172a;
+}
+
+.container{
+  max-width:900px;
+  margin:auto;
+  background:white;
+  padding:25px;
+  border-radius:16px;
+  box-shadow:0 15px 40px rgba(0,0,0,0.2);
+}
+
+h1{
+  text-align:center;
+  margin-bottom:10px;
+}
+
+.sub{
+  text-align:center;
+  color:#64748b;
+  margin-bottom:20px;
+}
+
+.card{
+  background:#f8fafc;
+  padding:15px;
+  margin-bottom:15px;
+  border-radius:12px;
+  border-left:6px solid #2563eb;
+}
+
+.pergunta{
+  font-weight:600;
+  margin-bottom:8px;
+  font-size:15px;
+  line-height:1.4;
+}
+
+.pergunta small{
+  color:#64748b;
+  font-weight:500;
+}
+
+.resultado{
+  font-size:14px;
+  margin-bottom:10px;
+}
+
+.barra{
+  background:#e2e8f0;
+  height:10px;
+  border-radius:5px;
+  margin-bottom:10px;
+  overflow:hidden;
+}
+
+.progresso{
+  height:10px;
+  border-radius:5px;
+}
+
+.valor{
+  font-size:13px;
+  margin-bottom:4px;
+}
+
+.nivelBox{
+  margin-top:20px;
+  padding:20px;
+  border-radius:12px;
+  text-align:center;
+  font-size:20px;
+  background:#f1f5f9;
+}
+
+button{
+  margin-top:20px;
+  background:#2563eb;
+  color:white;
+  border:none;
+  padding:10px 20px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.center{text-align:center;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1 id="tituloEmpresa">Carregando...</h1>
+<div class="sub">Relatório Psicossocial</div>
+
+<div id="relatorio"></div>
+
+<div class="center">
+  <button onclick="voltar()">⬅ Voltar</button>
+</div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+const URL = "https://script.google.com/macros/s/AKfycbzRXsUd8pDea5c6JO18qxT49Rp2YPr1U4qhKI1QnvN0ODHJHdIyPUQ7uTIGxR78Llk/exec";
+
+let params = new URLSearchParams(window.location.search);
+let cnpj = String(params.get("cnpj") || "").trim();
+let nome = params.get("nome");
+let cargoFiltro = String(params.get("cargo") || "").trim();
+
+let titulo = document.getElementById("tituloEmpresa");
+let relatorio = document.getElementById("relatorio");
+
+// 🔥 NORMALIZAR TEXTO
+function normalizar(txt){
+  return String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+}
+
+// 🔥 PESO
+function getPeso(resposta, tipo){
+
+  resposta = normalizar(resposta);
+
+  if(tipo === "positiva"){
+    if(resposta === "sempre") return 0;
+    if(resposta === "frequentemente") return 0.5;
+    if(resposta.includes("vez")) return 1;
+    if(resposta === "raramente") return 1.5;
+    return 2;
+  } else {
+    if(resposta === "sempre") return 2;
+    if(resposta === "frequentemente") return 1.5;
+    if(resposta.includes("vez")) return 1;
+    if(resposta === "raramente") return 0.5;
+    return 0;
+  }
+}
+
+// 🔥 TIPOS
+const perguntasTipo = {
+  p1:"positiva", p2:"negativa", p3:"positiva",
+  p4:"positiva", p5:"positiva", p6:"positiva",
+  p7:"positiva", p8:"positiva", p9:"positiva",
+  p10:"positiva", p11:"positiva", p12:"positiva",
+  p13:"positiva", p14:"positiva",
+  p15:"positiva", p16:"negativa", p17:"positiva",
+  p18:"negativa", p19:"negativa", p20:"negativa",
+  p21:"positiva", p22:"positiva", p23:"positiva",
+  p24:"positiva", p25:"positiva", p26:"positiva",
+  p27:"positiva", p28:"negativa", p29:"positiva"
+};
+
+// 🔥 TEXTOS DAS PERGUNTAS
+const perguntasTexto = {
+  p1: "A quantidade de trabalho que tenho é adequada para o tempo disponível.",
+  p2: "Frequentemente, sinto que tenho muito trabalho para fazer.",
+  p3: "Tenho prazos razoáveis para cumprir minhas tarefas.",
+  p4: "Tenho liberdade para decidir como realizar minhas tarefas.",
+  p5: "Sinto que posso influenciar as decisões que afetam meu trabalho.",
+  p6: "Tenho controle sobre minha carga de trabalho.",
+  p7: "Sinto que o ambiente físico de trabalho é seguro.",
+  p8: "A qualidade do ambiente de trabalho contribui para meu bem-estar.",
+  p9: "Existem condições adequadas para realizar meu trabalho.",
+  p10: "Tenho um bom relacionamento com meus colegas de trabalho.",
+  p11: "Sinto que posso contar com o apoio dos meus colegas.",
+  p12: "Existe um bom espírito de equipe em meu ambiente de trabalho.",
+  p13: "Meu trabalho é reconhecido por meus superiores?",
+  p14: "Recebo feedback positivo sobre meu desempenho.",
+  p15: "Sinto-me seguro(a) em relação à minha posição na empresa.",
+  p16: "Tenho preocupações sobre a possibilidade de perder meu emprego.",
+  p17: "A empresa proporciona estabilidade no emprego.",
+  p18: "Há um controle excessivo sobre o meu processo de trabalho?",
+  p19: "Sinto que há pressão psicológica nas atividades que realizo.",
+  p20: "O meu trabalho pode ser emocionalmente desgastante.",
+  p21: "Sinto que os valores da empresa estão alinhados com os meus.",
+  p22: "Não tenho conflitos entre as minhas crenças e o que é exigido pela empresa.",
+  p23: "A cultura da empresa respeita os meus valores, crenças e princípios independente de quais forem.",
+  p24: "A empresa oferece oportunidades de desenvolvimento e aprendizado.",
+  p25: "Sinto que posso crescer profissionalmente na empresa.",
+  p26: "Estou satisfeito(a) com as oportunidades de treinamento que recebo.",
+  p27: "Consigo equilibrar minha vida profissional e pessoal.",
+  p28: "Meu trabalho interfere negativamente na minha vida familiar.",
+  p29: "Sinto que tenho tempo suficiente para atividades pessoais e de lazer."
+};
+
+async function carregar(){
+
+  try{
+
+    relatorio.innerHTML = "";
+
+    const resposta = await fetch(
+      URL + "?cnpj=" + encodeURIComponent(cnpj)
+    );
+
+    const dados = await resposta.json();
+
+    let respostas = [];
+
+    dados.forEach(d => {
+
+      let cnpjLinha = String(d.cnpj || "").trim();
+      let cargoOriginal = d.cargo || d.cargos || d.funcao || "";
+
+      let cargoLinha = normalizar(cargoOriginal);
+      let cargoFiltroNorm = normalizar(cargoFiltro);
+
+      if(cnpjLinha === cnpj){
+
+        if(!cargoFiltro){
+          respostas.push(d);
+          return;
+        }
+
+        if(
+          cargoLinha === cargoFiltroNorm ||
+          cargoLinha.includes(cargoFiltroNorm) ||
+          cargoFiltroNorm.includes(cargoLinha)
+        ){
+          respostas.push(d);
+        }
+      }
+    });
+
+    if(respostas.length === 0){
+      titulo.innerText = "Nenhum dado encontrado";
+      return;
+    }
+
+    titulo.innerText = `${nome} - ${cargoFiltro || "Geral"}`;
+
+    let contagem = {};
+
+    respostas.forEach(r => {
+
+      let resp;
+
+      try {
+        resp = JSON.parse(r.respostas || "{}");
+      } catch {
+        resp = {};
+      }
+
+      for(let i=1;i<=29;i++){
+
+        let p = "p"+i;
+        let val = normalizar(resp[p]);
+
+        if(!val) continue;
+
+        if(!contagem[p]) contagem[p] = {};
+        if(!contagem[p][val]) contagem[p][val] = 0;
+
+        contagem[p][val]++;
+      }
+    });
+
+    let pontuacao = 0;
+    let totalPerguntas = 0;
+
+    for(let i=1;i<=29;i++){
+
+      let chave = "p"+i;
+      let obj = contagem[chave];
+
+      if(!obj) continue;
+
+      let total = Object.values(obj).reduce((a,b)=>a+b,0);
+      if(total === 0) continue;
+
+      totalPerguntas++;
+
+      let principal = Object.keys(obj)
+        .reduce((a,b)=> obj[a] > obj[b] ? a : b);
+
+      let tipoPergunta = perguntasTipo[chave];
+
+      let peso = getPeso(principal, tipoPergunta);
+      pontuacao += peso;
+
+      let card = document.createElement("div");
+      card.className = "card";
+
+      let html = `
+        <div class="pergunta">
+          <small>${chave.toUpperCase()}</small><br>
+          ${perguntasTexto[chave] || "Pergunta " + i}
+        </div>
+        <div class="resultado">Resposta principal: <b>${principal}</b></div>
+      `;
+
+      for(let r in obj){
+
+        let qtd = obj[r];
+        let pct = Math.round((qtd/total)*100);
+
+        let cor = "#16a34a";
+
+        if(tipoPergunta === "positiva"){
+          if(r === "sempre") cor = "#16a34a";
+          else if(r === "frequentemente") cor = "#22c55e";
+          else if(r.includes("vez")) cor = "#f59e0b";
+          else if(r === "raramente") cor = "#fb923c";
+          else cor = "#dc2626";
+        }else{
+          if(r === "sempre") cor = "#dc2626";
+          else if(r === "frequentemente") cor = "#fb923c";
+          else if(r.includes("vez")) cor = "#f59e0b";
+          else if(r === "raramente") cor = "#22c55e";
+          else cor = "#16a34a";
+        }
+
+        html += `
+          <div class="valor">${r} (${pct}%)</div>
+          <div class="barra">
+            <div class="progresso" style="width:${pct}%; background:${cor}"></div>
+          </div>
+        `;
+      }
+
+      card.innerHTML = html;
+      relatorio.appendChild(card);
+    }
+
+    let media = totalPerguntas ? pontuacao/totalPerguntas : 0;
+
+    let nivel = "Baixo";
+    let cor = "#16a34a";
+
+    if(media >= 1.2){ nivel="Alto"; cor="#dc2626"; }
+    else if(media >= 0.6){ nivel="Médio"; cor="#f59e0b"; }
+
+    let box = document.createElement("div");
+    box.className="nivelBox";
+    box.innerHTML = `Nível de Risco: <b style="color:${cor}">${nivel}</b>`;
+
+    relatorio.appendChild(box);
+
+  }catch(e){
+    console.error(e);
+    titulo.innerText = "Erro ao carregar relatório";
+  }
+}
+
+window.voltar = function(){
+  window.location.href = "cargos.html?cnpj="
+  + encodeURIComponent(cnpj)
+  + "&nome=" + encodeURIComponent(nome);
+}
+
+carregar();
+
+});
+</script>
+
+</body>
+</html>
