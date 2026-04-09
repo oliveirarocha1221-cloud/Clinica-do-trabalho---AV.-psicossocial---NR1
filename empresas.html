@@ -132,6 +132,20 @@ const URL = "https://script.google.com/macros/s/AKfycbzRXsUd8pDea5c6JO18qxT49Rp2
 let lista = document.getElementById("listaEmpresas");
 let todasEmpresas = [];
 
+// 🔥 NORMALIZAR CNPJ
+function normalizarCNPJ(cnpj){
+  return String(cnpj || "")
+    .replace(/\D/g, "")
+    .trim();
+}
+
+// 🔥 ESCOLHER NOME PRINCIPAL
+function escolherNomePrincipal(nomesObj){
+  return Object.keys(nomesObj).reduce((a, b) => 
+    nomesObj[a] > nomesObj[b] ? a : b
+  );
+}
+
 // SPLASH
 window.addEventListener("load", () => {
   let jaViu = sessionStorage.getItem("splashExibido");
@@ -157,28 +171,32 @@ async function carregar(){
 
     dados.forEach(d => {
 
-      // 🔥 NORMALIZAÇÃO (AQUI ESTAVA O PROBLEMA)
-      let cnpj = String(d.cnpj || "").trim();
-      let nome = String(d.empresa || "Empresa sem nome").trim();
+      let cnpj = normalizarCNPJ(d.cnpj);
+      let nome = String(d.empresa || d.nome || "Empresa sem nome").trim();
 
-      // ❌ ignora se não tiver CNPJ
       if(!cnpj) return;
 
-      // 🔥 evita duplicação por erro de espaço
-      let chave = cnpj;
-
-      if(!agrupado[chave]){
-        agrupado[chave] = {
-          nome: nome,
+      if(!agrupado[cnpj]){
+        agrupado[cnpj] = {
+          nomes: {},
           cnpj: cnpj,
           total: 0
         };
       }
 
-      agrupado[chave].total++;
+      if(!agrupado[cnpj].nomes[nome]){
+        agrupado[cnpj].nomes[nome] = 0;
+      }
+
+      agrupado[cnpj].nomes[nome]++;
+      agrupado[cnpj].total++;
     });
 
-    todasEmpresas = Object.values(agrupado);
+    todasEmpresas = Object.values(agrupado).map(emp => ({
+      nome: escolherNomePrincipal(emp.nomes),
+      cnpj: emp.cnpj,
+      total: emp.total
+    }));
 
     renderizar(todasEmpresas);
 
@@ -231,10 +249,13 @@ document.getElementById("buscaEmpresa").addEventListener("input", function(){
   renderizar(filtradas);
 });
 
-// 🔗 REDIRECIONAR
+// 🔗 REDIRECIONAR (🔥 CORREÇÃO PRINCIPAL AQUI)
 window.abrirEmpresa = function(cnpj, nome){
+
+  let cnpjLimpo = normalizarCNPJ(cnpj); // 🔥 GARANTE LIMPO
+
   window.location.href = "cargos.html?cnpj=" 
-  + encodeURIComponent(cnpj) 
+  + encodeURIComponent(cnpjLimpo) 
   + "&nome=" + encodeURIComponent(nome);
 }
 
