@@ -69,7 +69,7 @@ let lista = document.getElementById("listaCargos");
 let cargos = {};
 let respostasEmpresa = [];
 
-// 🔥 NORMALIZAR
+// 🔥 NORMALIZAR TEXTO
 function normalizar(txt){
   return String(txt || "")
     .toLowerCase()
@@ -78,7 +78,14 @@ function normalizar(txt){
     .trim();
 }
 
-// 🔥 MESMA FUNÇÃO DO PAINEL
+// 🔥 NORMALIZAR CNPJ
+function normalizarCNPJ(cnpj){
+  return String(cnpj || "")
+    .replace(/\D/g, "")
+    .trim();
+}
+
+// 🔥 PESO
 function getPeso(resposta, tipo){
 
   resposta = normalizar(resposta);
@@ -98,7 +105,7 @@ function getPeso(resposta, tipo){
   }
 }
 
-// 🔥 CLASSIFICAÇÃO
+// 🔥 TIPOS
 const perguntasTipo = {
   p1:"positiva", p2:"negativa", p3:"positiva",
   p4:"positiva", p5:"positiva", p6:"positiva",
@@ -128,14 +135,16 @@ async function carregar(){
     cargos = {};
     respostasEmpresa = [];
 
-    const resposta = await fetch(URL + "?cnpj=" + encodeURIComponent(cnpj));
+    const resposta = await fetch(URL);
     const dados = await resposta.json();
+
+    let cnpjURL = normalizarCNPJ(cnpj);
 
     dados.forEach(d => {
 
-      let cnpjLinha = String(d.cnpj || "").trim();
+      let cnpjLinha = normalizarCNPJ(d.cnpj);
 
-      if(cnpjLinha === cnpj){
+      if(cnpjLinha === cnpjURL){
 
         respostasEmpresa.push(d);
 
@@ -151,7 +160,7 @@ async function carregar(){
       return;
     }
 
-    titulo.innerText = `${nome} (CNPJ: ${cnpj})`;
+    titulo.innerText = `${nome} (CNPJ: ${cnpjURL})`;
 
     for(let cargo in cargos){
 
@@ -180,7 +189,7 @@ window.abrirCargo = function(cargo){
   window.location.href="painel.html?cnpj="+encodeURIComponent(cnpj)+"&nome="+encodeURIComponent(nome)+"&cargo="+encodeURIComponent(cargo);
 }
 
-// 🔥 PDF CORRIGIDO
+// 🔥 PDF COMPLETO (CORRIGIDO)
 window.gerarPDF = function(){
 
   const { jsPDF } = window.jspdf;
@@ -228,7 +237,7 @@ window.gerarPDF = function(){
   titulo("RELATÓRIO PSICOSSOCIAL");
 
   texto(`Empresa: ${nome}`);
-  texto(`CNPJ: ${cnpj}`);
+  texto(`CNPJ: ${normalizarCNPJ(cnpj)}`);
   texto(`Total de colaboradores: ${respostasEmpresa.length}`);
   texto(`Data: ${new Date().toLocaleDateString()}`);
 
@@ -283,8 +292,6 @@ window.gerarPDF = function(){
         .reduce((a,b)=> respostasObj[a] > respostasObj[b] ? a : b);
 
       let tipoPergunta = perguntasTipo[pergunta];
-
-      // 🔥 AGORA USANDO MESMA LÓGICA DO PAINEL
       let peso = getPeso(respostaPrincipal, tipoPergunta);
 
       pontuacao += peso;
@@ -329,39 +336,35 @@ window.gerarPDF = function(){
 
   ranking.sort((a,b)=> b.media - a.media);
 
-// 🔥 IDENTIFICAR CARGOS POR NÍVEL
-let cargosAlto = ranking.filter(r => r.nivel === "Alto");
-let cargosMedio = ranking.filter(r => r.nivel === "Médio");
-let cargosBaixo = ranking.filter(r => r.nivel === "Baixo");
+  let cargosAlto = ranking.filter(r => r.nivel === "Alto");
+  let cargosMedio = ranking.filter(r => r.nivel === "Médio");
+  let cargosBaixo = ranking.filter(r => r.nivel === "Baixo");
 
-subtitulo("Diagnóstico por Cargo");
+  subtitulo("Diagnóstico por Cargo");
 
-// 🔴 ALTO RISCO
-if(cargosAlto.length > 0){
-  texto("Cargos com alto risco psicossocial:");
-  cargosAlto.forEach(c => {
-    texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
-  });
-  linha();
-}
+  if(cargosAlto.length > 0){
+    texto("Cargos com alto risco psicossocial:");
+    cargosAlto.forEach(c => {
+      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+    });
+    linha();
+  }
 
-// 🟡 MÉDIO RISCO
-if(cargosMedio.length > 0){
-  texto("Cargos com risco moderado:");
-  cargosMedio.forEach(c => {
-    texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
-  });
-  linha();
-}
+  if(cargosMedio.length > 0){
+    texto("Cargos com risco moderado:");
+    cargosMedio.forEach(c => {
+      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+    });
+    linha();
+  }
 
-// 🟢 BAIXO RISCO
-if(cargosBaixo.length > 0){
-  texto("Cargos com baixo risco:");
-  cargosBaixo.forEach(c => {
-    texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
-  });
-  linha();
-}
+  if(cargosBaixo.length > 0){
+    texto("Cargos com baixo risco:");
+    cargosBaixo.forEach(c => {
+      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+    });
+    linha();
+  }
 
   subtitulo("Ranking de Risco");
 
@@ -374,28 +377,20 @@ if(cargosBaixo.length > 0){
   subtitulo("Conclusão");
 
   if(nivelEmpresa === "Baixo"){
-
-  texto("Os resultados indicam um ambiente organizacional saudável, com baixos níveis de risco psicossocial.");
-  texto("Observa-se equilíbrio entre as demandas de trabalho e os recursos disponíveis, além de relações interpessoais positivas e condições adequadas de atuação.");
-  texto("Recomenda-se a manutenção das boas práticas atuais, com ações contínuas de monitoramento, promoção do bem-estar e valorização dos colaboradores.");
-
-}
-
-else if(nivelEmpresa === "Médio"){
-
-  texto("Os resultados evidenciam a presença de fatores de risco psicossocial em nível moderado.");
-  texto("Alguns aspectos do ambiente de trabalho podem estar impactando o bem-estar, a motivação e o desempenho dos colaboradores.");
-  texto("Recomenda-se a implementação de ações preventivas e corretivas, com foco na melhoria das condições organizacionais, comunicação interna e suporte aos colaboradores.");
-
-}
-
-else if(nivelEmpresa === "Alto"){
-
-  texto("Os resultados indicam níveis elevados de risco psicossocial no ambiente organizacional.");
-  texto("Foram identificados fatores críticos que podem comprometer a saúde mental, o engajamento e a produtividade dos colaboradores.");
-  texto("É altamente recomendada a adoção imediata de medidas corretivas, incluindo intervenções organizacionais, revisão das condições de trabalho, fortalecimento da liderança e oferta de suporte psicológico especializado.");
-
-}
+    texto("Os resultados indicam um ambiente organizacional saudável, com baixos níveis de risco psicossocial.");
+    texto("Observa-se equilíbrio entre as demandas de trabalho e os recursos disponíveis, além de relações interpessoais positivas e condições adequadas de atuação.");
+    texto("Recomenda-se a manutenção das boas práticas atuais, com ações contínuas de monitoramento, promoção do bem-estar e valorização dos colaboradores.");
+  }
+  else if(nivelEmpresa === "Médio"){
+    texto("Os resultados evidenciam a presença de fatores de risco psicossocial em nível moderado.");
+    texto("Alguns aspectos do ambiente de trabalho podem estar impactando o bem-estar, a motivação e o desempenho dos colaboradores.");
+    texto("Recomenda-se a implementação de ações preventivas e corretivas, com foco na melhoria das condições organizacionais, comunicação interna e suporte aos colaboradores.");
+  }
+  else{
+    texto("Os resultados indicam níveis elevados de risco psicossocial no ambiente organizacional.");
+    texto("Foram identificados fatores críticos que podem comprometer a saúde mental, o engajamento e a produtividade dos colaboradores.");
+    texto("É altamente recomendada a adoção imediata de medidas corretivas, incluindo intervenções organizacionais, revisão das condições de trabalho, fortalecimento da liderança e oferta de suporte psicológico especializado.");
+  }
 
   doc.save("relatorio_psicossocial.pdf");
 }
