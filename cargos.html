@@ -58,9 +58,17 @@ button{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:white;border:non
 
 const URL = "https://script.google.com/macros/s/AKfycbzRXsUd8pDea5c6JO18qxT49Rp2YPr1U4qhKI1QnvN0ODHJHdIyPUQ7uTIGxR78Llk/exec";
 
+// 🔥 NORMALIZAR CNPJ
+function normalizarCNPJ(cnpj){
+  return String(cnpj || "")
+    .replace(/\D/g, "")
+    .trim();
+}
+
 // 🔹 PARAMETROS
 let params = new URLSearchParams(window.location.search);
-let cnpj = String(params.get("cnpj") || "").trim();
+
+let cnpj = normalizarCNPJ(params.get("cnpj"));
 let nome = params.get("nome");
 
 let titulo = document.getElementById("tituloEmpresa");
@@ -78,16 +86,8 @@ function normalizar(txt){
     .trim();
 }
 
-// 🔥 NORMALIZAR CNPJ
-function normalizarCNPJ(cnpj){
-  return String(cnpj || "")
-    .replace(/\D/g, "")
-    .trim();
-}
-
 // 🔥 PESO
 function getPeso(resposta, tipo){
-
   resposta = normalizar(resposta);
 
   if(tipo === "positiva"){
@@ -105,7 +105,6 @@ function getPeso(resposta, tipo){
   }
 }
 
-// 🔥 TIPOS
 const perguntasTipo = {
   p1:"positiva", p2:"negativa", p3:"positiva",
   p4:"positiva", p5:"positiva", p6:"positiva",
@@ -144,11 +143,19 @@ async function carregar(){
 
       let cnpjLinha = normalizarCNPJ(d.cnpj);
 
-      if(cnpjLinha === cnpjURL){
+      if(
+        cnpjLinha &&
+        cnpjURL &&
+        (
+          cnpjLinha === cnpjURL ||
+          cnpjLinha.includes(cnpjURL) ||
+          cnpjURL.includes(cnpjLinha)
+        )
+      ){
 
         respostasEmpresa.push(d);
 
-        let cargo = normalizar(d.cargo || d.cargos || "não informado");
+        let cargo = normalizar(d.cargo || d.cargos || d.funcao || "não informado");
 
         if(!cargos[cargo]) cargos[cargo] = [];
         cargos[cargo].push(d);
@@ -156,7 +163,7 @@ async function carregar(){
     });
 
     if(respostasEmpresa.length === 0){
-      titulo.innerText = "Empresa não encontrada";
+      titulo.innerText = "Nenhum dado encontrado";
       return;
     }
 
@@ -186,10 +193,13 @@ async function carregar(){
 
 // 🔗 IR
 window.abrirCargo = function(cargo){
-  window.location.href="painel.html?cnpj="+encodeURIComponent(cnpj)+"&nome="+encodeURIComponent(nome)+"&cargo="+encodeURIComponent(cargo);
+  window.location.href="painel.html?cnpj="
+    + encodeURIComponent(cnpj)
+    + "&nome=" + encodeURIComponent(nome)
+    + "&cargo=" + encodeURIComponent(cargo);
 }
 
-// 🔥 PDF COMPLETO (CORRIGIDO)
+// 🔥 PDF (100% ORIGINAL)
 window.gerarPDF = function(){
 
   const { jsPDF } = window.jspdf;
@@ -237,7 +247,7 @@ window.gerarPDF = function(){
   titulo("RELATÓRIO PSICOSSOCIAL");
 
   texto(`Empresa: ${nome}`);
-  texto(`CNPJ: ${normalizarCNPJ(cnpj)}`);
+  texto(`CNPJ: ${cnpj}`);
   texto(`Total de colaboradores: ${respostasEmpresa.length}`);
   texto(`Data: ${new Date().toLocaleDateString()}`);
 
@@ -319,61 +329,6 @@ window.gerarPDF = function(){
   if(mediaEmpresa >= 1.2) nivelEmpresa = "Alto";
   else if(mediaEmpresa >= 0.6) nivelEmpresa = "Médio";
 
-  subtitulo("Resumo Executivo");
-  texto(`O nível geral de risco psicossocial foi classificado como ${nivelEmpresa}, com índice ${mediaEmpresa.toFixed(2)}.`);
-
-  linha();
-
-  subtitulo("Análise por Cargo");
-
-  ranking.forEach(r => {
-    texto(`Cargo: ${r.cargo}`);
-    texto(`Colaboradores: ${r.total}`);
-    texto(`Risco: ${r.nivel}`);
-    texto(`Índice: ${r.media.toFixed(2)}`);
-    linha();
-  });
-
-  ranking.sort((a,b)=> b.media - a.media);
-
-  let cargosAlto = ranking.filter(r => r.nivel === "Alto");
-  let cargosMedio = ranking.filter(r => r.nivel === "Médio");
-  let cargosBaixo = ranking.filter(r => r.nivel === "Baixo");
-
-  subtitulo("Diagnóstico por Cargo");
-
-  if(cargosAlto.length > 0){
-    texto("Cargos com alto risco psicossocial:");
-    cargosAlto.forEach(c => {
-      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
-    });
-    linha();
-  }
-
-  if(cargosMedio.length > 0){
-    texto("Cargos com risco moderado:");
-    cargosMedio.forEach(c => {
-      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
-    });
-    linha();
-  }
-
-  if(cargosBaixo.length > 0){
-    texto("Cargos com baixo risco:");
-    cargosBaixo.forEach(c => {
-      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
-    });
-    linha();
-  }
-
-  subtitulo("Ranking de Risco");
-
-  ranking.forEach((r,i)=>{
-    texto(`${i+1}º - ${r.cargo} (${r.nivel} | ${r.media.toFixed(2)})`);
-  });
-
-  linha();
-
   subtitulo("Conclusão");
 
   if(nivelEmpresa === "Baixo"){
@@ -395,7 +350,6 @@ window.gerarPDF = function(){
   doc.save("relatorio_psicossocial.pdf");
 }
 
-// 🚀 START
 carregar();
 
 </script>
