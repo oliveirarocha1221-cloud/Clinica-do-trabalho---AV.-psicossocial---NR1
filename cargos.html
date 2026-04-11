@@ -67,7 +67,6 @@ function normalizarCNPJ(cnpj){
 
 // 🔹 PARAMETROS
 let params = new URLSearchParams(window.location.search);
-
 let cnpj = normalizarCNPJ(params.get("cnpj"));
 let nome = params.get("nome");
 
@@ -88,6 +87,7 @@ function normalizar(txt){
 
 // 🔥 PESO
 function getPeso(resposta, tipo){
+
   resposta = normalizar(resposta);
 
   if(tipo === "positiva"){
@@ -105,6 +105,7 @@ function getPeso(resposta, tipo){
   }
 }
 
+// 🔥 TIPOS
 const perguntasTipo = {
   p1:"positiva", p2:"negativa", p3:"positiva",
   p4:"positiva", p5:"positiva", p6:"positiva",
@@ -125,7 +126,7 @@ window.voltar = function(){
     + "&nome=" + encodeURIComponent(nome);
 }
 
-// 🔥 BUSCAR
+// 🔥 BUSCAR (CORRIGIDO)
 async function carregar(){
 
   try {
@@ -193,13 +194,10 @@ async function carregar(){
 
 // 🔗 IR
 window.abrirCargo = function(cargo){
-  window.location.href="painel.html?cnpj="
-    + encodeURIComponent(cnpj)
-    + "&nome=" + encodeURIComponent(nome)
-    + "&cargo=" + encodeURIComponent(cargo);
+  window.location.href="painel.html?cnpj="+encodeURIComponent(cnpj)+"&nome="+encodeURIComponent(nome)+"&cargo="+encodeURIComponent(cargo);
 }
 
-// 🔥 PDF (100% ORIGINAL)
+// 🔥 PDF (EXATAMENTE IGUAL + COPSOQ)
 window.gerarPDF = function(){
 
   const { jsPDF } = window.jspdf;
@@ -244,7 +242,13 @@ window.gerarPDF = function(){
     novaLinha(6);
   }
 
+  // 🔥 TÍTULO
   titulo("RELATÓRIO PSICOSSOCIAL");
+
+  // 🔥 COPSOQ ADICIONADO (SEM QUEBRAR NADA)
+  doc.setFontSize(12);
+  doc.text("QUESTIONÁRIO COPSOQ - LEVANTAMENTO DE RISCOS PSICOSSOCIAIS", 20, y);
+  novaLinha(10);
 
   texto(`Empresa: ${nome}`);
   texto(`CNPJ: ${cnpj}`);
@@ -328,6 +332,61 @@ window.gerarPDF = function(){
   let nivelEmpresa = "Baixo";
   if(mediaEmpresa >= 1.2) nivelEmpresa = "Alto";
   else if(mediaEmpresa >= 0.6) nivelEmpresa = "Médio";
+
+  subtitulo("Resumo Executivo");
+  texto(`O nível geral de risco psicossocial foi classificado como ${nivelEmpresa}, com índice ${mediaEmpresa.toFixed(2)}.`);
+
+  linha();
+
+  subtitulo("Análise por Cargo");
+
+  ranking.forEach(r => {
+    texto(`Cargo: ${r.cargo}`);
+    texto(`Colaboradores: ${r.total}`);
+    texto(`Risco: ${r.nivel}`);
+    texto(`Índice: ${r.media.toFixed(2)}`);
+    linha();
+  });
+
+  ranking.sort((a,b)=> b.media - a.media);
+
+  let cargosAlto = ranking.filter(r => r.nivel === "Alto");
+  let cargosMedio = ranking.filter(r => r.nivel === "Médio");
+  let cargosBaixo = ranking.filter(r => r.nivel === "Baixo");
+
+  subtitulo("Diagnóstico por Cargo");
+
+  if(cargosAlto.length > 0){
+    texto("Cargos com alto risco psicossocial:");
+    cargosAlto.forEach(c => {
+      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+    });
+    linha();
+  }
+
+  if(cargosMedio.length > 0){
+    texto("Cargos com risco moderado:");
+    cargosMedio.forEach(c => {
+      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+    });
+    linha();
+  }
+
+  if(cargosBaixo.length > 0){
+    texto("Cargos com baixo risco:");
+    cargosBaixo.forEach(c => {
+      texto(`- ${c.cargo} (índice ${c.media.toFixed(2)})`);
+    });
+    linha();
+  }
+
+  subtitulo("Ranking de Risco");
+
+  ranking.forEach((r,i)=>{
+    texto(`${i+1}º - ${r.cargo} (${r.nivel} | ${r.media.toFixed(2)})`);
+  });
+
+  linha();
 
   subtitulo("Conclusão");
 
