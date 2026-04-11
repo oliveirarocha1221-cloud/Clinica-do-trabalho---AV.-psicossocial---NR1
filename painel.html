@@ -142,7 +142,7 @@ function normalizar(txt){
     .trim();
 }
 
-// 🔥 PESO (INALTERADO)
+// 🔥 PESO
 function getPeso(resposta, tipo){
 
   resposta = normalizar(resposta);
@@ -162,7 +162,7 @@ function getPeso(resposta, tipo){
   }
 }
 
-// 🔥 TIPOS (INALTERADO)
+// 🔥 TIPOS
 const perguntasTipo = {
   p1:"positiva", p2:"negativa", p3:"positiva",
   p4:"positiva", p5:"positiva", p6:"positiva",
@@ -176,8 +176,38 @@ const perguntasTipo = {
   p27:"positiva", p28:"negativa", p29:"positiva"
 };
 
-// 🔥 TEXTOS (INALTERADO)
-const perguntasTexto = { /* MANTENHA O SEU ORIGINAL AQUI (igual já está) */ };
+// 🔥 PERGUNTAS RESTAURADAS
+const perguntasTexto = {
+  p1: "A quantidade de trabalho que tenho é adequada para o tempo disponível.",
+  p2: "Frequentemente, sinto que tenho muito trabalho para fazer.",
+  p3: "Tenho prazos razoáveis para cumprir minhas tarefas.",
+  p4: "Tenho liberdade para decidir como realizar minhas tarefas.",
+  p5: "Sinto que posso influenciar as decisões que afetam meu trabalho.",
+  p6: "Tenho controle sobre minha carga de trabalho.",
+  p7: "Sinto que o ambiente físico de trabalho é seguro.",
+  p8: "A qualidade do ambiente de trabalho contribui para meu bem-estar.",
+  p9: "Existem condições adequadas para realizar meu trabalho.",
+  p10: "Tenho um bom relacionamento com meus colegas de trabalho.",
+  p11: "Sinto que posso contar com o apoio dos meus colegas.",
+  p12: "Existe um bom espírito de equipe em meu ambiente de trabalho.",
+  p13: "Meu trabalho é reconhecido por meus superiores?",
+  p14: "Recebo feedback positivo sobre meu desempenho.",
+  p15: "Sinto-me seguro(a) em relação à minha posição na empresa.",
+  p16: "Tenho preocupações sobre a possibilidade de perder meu emprego.",
+  p17: "A empresa proporciona estabilidade no emprego.",
+  p18: "Há um controle excessivo sobre o meu processo de trabalho?",
+  p19: "Sinto que há pressão psicológica nas atividades que realizo.",
+  p20: "O meu trabalho pode ser emocionalmente desgastante.",
+  p21: "Sinto que os valores da empresa estão alinhados com os meus.",
+  p22: "Não tenho conflitos entre as minhas crenças e o que é exigido pela empresa.",
+  p23: "A cultura da empresa respeita os meus valores, crenças e princípios independente de quais forem.",
+  p24: "A empresa oferece oportunidades de desenvolvimento e aprendizado.",
+  p25: "Sinto que posso crescer profissionalmente na empresa.",
+  p26: "Estou satisfeito(a) com as oportunidades de treinamento que recebo.",
+  p27: "Consigo equilibrar minha vida profissional e pessoal.",
+  p28: "Meu trabalho interfere negativamente na minha vida familiar.",
+  p29: "Sinto que tenho tempo suficiente para atividades pessoais e de lazer."
+};
 
 // 🔥 CARREGAR
 async function carregar(){
@@ -186,7 +216,6 @@ async function carregar(){
 
     relatorio.innerHTML = "";
 
-    // ✅ NÃO FILTRA NA API
     const resposta = await fetch(URL);
     const dados = await resposta.json();
 
@@ -200,7 +229,6 @@ async function carregar(){
       let cargoLinha = normalizar(cargoOriginal);
       let cargoFiltroNorm = normalizar(cargoFiltro);
 
-      // ✅ FILTRO INTELIGENTE
       if(
         cnpjLinha &&
         cnpj &&
@@ -288,7 +316,7 @@ async function carregar(){
       let html = `
         <div class="pergunta">
           <small>${chave.toUpperCase()}</small><br>
-          ${perguntasTexto[chave] || "Pergunta " + i}
+          ${perguntasTexto[chave]}
         </div>
         <div class="resultado">Resposta principal: <b>${principal}</b></div>
       `;
